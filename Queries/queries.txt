@@ -111,7 +111,7 @@ END$$
 DELIMITER;
 
 DELIMITER $$
-CREATE DEFINER = `root`@`localhost` PROCEDURE `sp_updateWish`(
+CREATE DEFINER = `root`@`localhost` PROCEDURE `sp_updateWish`(	
 IN p_title varchar(45),
 IN p_description varchar(5000),
 IN p_wish_id bigint,
@@ -201,3 +201,184 @@ BEGIN
 END$$
  
 DELIMITER ;
+
+
+ALTER TABLE `BucketList`.`tbl_addwish1`
+ADD COLUMN `wish_file_path` VARCHAR(200) NULL AFTER `wish_date` ,
+ADD COLUMN `wish_accomplished` INT NULL AFTER `wish_file_path`,
+ADD COLUMN `wish_private` INT NULL AFTER `wish_accomplished`;  
+
+USE `BucketList`;
+DROP procedure IF EXISTS `sp_wishadd`;
+ 
+DELIMITER $$
+USE `BucketList`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_wishadd`(
+    IN p_title varchar(45),
+    IN p_description varchar(1000),
+    IN p_user_id bigint,
+    IN p_file_path varchar(200),
+    IN p_is_private int,
+    IN p_is_done int
+)
+BEGIN
+    insert into tbl_addwish1(
+        wish_title,
+        wish_description,
+        wish_user_id,
+        wish_date,
+        wish_file_path,
+        wish_private,
+        wish_accomplished
+    )
+    values
+    (
+        p_title,
+        p_description,
+        p_user_id,
+        NOW(),
+        p_file_path,
+        p_is_private,
+        p_is_done
+    );
+
+SET @last_id = LAST_INSERT_ID()
+insert into tbl_likes(
+wish_id,
+user_id,
+wish_like
+)
+values(
+@last_id,
+p_user_id,
+0
+);
+END$$
+ 
+DELIMITER ;
+
+
+
+USE `BucketList`;
+DROP procedure IF EXISTS `sp_updateWish`;
+ 
+DELIMITER $$
+USE `BucketList`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_updateWish`(
+IN p_title varchar(45),
+IN p_description varchar(1000),
+IN p_wish_id bigint,
+In p_user_id bigint,
+IN p_file_path varchar(200),
+IN p_is_private int,
+IN p_is_done int
+)
+BEGIN
+update tbl_addwish1 set
+    wish_title = p_title,
+    wish_description = p_description,
+    wish_file_path = p_file_path,
+    wish_private = p_is_private,
+    wish_accomplished = p_is_done
+    where wish_id = p_wish_id and wish_user_id = p_user_id;
+END$$
+ 
+DELIMITER ;
+
+
+USE `BucketList`;
+DROP procedure IF EXISTS `sp_getWishById1`;
+
+DELIMITER $$
+
+CREATE DEFINER = `root`@`localhost` PROCEDURE `sp_getWishById1`(
+IN p_wish_id bigint,
+IN p_user_id bigint)
+
+BEGIN
+	select wish_id, wish_title, wish_description, wish_file_path, wish_private, wish_accomplished from tbl_addwish1 where wish_id = p_wish_id and wish_user_id = p_user_id;
+END$$
+
+DELIMITER;
+
+
+USE `BucketList`;
+DROP procedure IF EXISTS `sp_updateWish`;
+
+DELIMITER $$
+ 
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_updateWish`(
+IN p_title varchar(45),
+IN p_description varchar(1000),
+IN p_wish_id bigint,
+In p_user_id bigint,
+IN p_file_path varchar(200),
+IN p_is_private int,
+IN p_is_done int
+)
+BEGIN
+update tbl_addwish1 set
+    wish_title = p_title,
+    wish_description = p_description,
+    wish_file_path = p_file_path,
+    wish_private = p_is_private,
+    wish_accomplished = p_is_done
+    where wish_id = p_wish_id and wish_user_id = p_user_id;
+END$$
+
+DELIMITER;
+
+USE `BucketList`;
+DROP procedure IF EXISTS `sp_GetAllWish`;
+ 
+DELIMITER $$
+USE `BucketList`$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_GetAllWish`()
+BEGIN
+    select wish_id,wish_title,wish_description,wish_file_path from tbl_addwish1 where wish_private = 0;
+END$$
+ 
+DELIMITER ;
+
+
+CREATE TABLE `BucketList`.`tbl_likes`(
+`wish_id` INT NOT NULL,
+`like_id` INT NOT NULL AUTO_INCREMENT,
+`user_id` INT NULL,
+`wish_like` INT NULL DEFAULT 0,
+PRIMARY KEY (`like_id`));
+
+DELIMITER $$
+ 
+USE BucketList;
+DROP PROCEDURE IF EXISTS `sp_AddUpdateLikes`;
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_AddUpdateLikes`(
+ IN p_wish_id int,
+ IN p_user_id int,
+ IN p_like int
+)
+BEGIN
+    if (select exists (select 1 from tbl_likes where wish_id = p_wish_id and user_id = p_user_id)) then
+ 
+        update tbl_likes set wish_like = p_like where wish_id = p_wish_id and user_id = p_user_id;
+         
+    else
+         
+        insert into tbl_likes(
+            wish_id,
+            user_id,
+            wish_like
+        )
+        values(
+            p_wish_id,
+            p_user_id,
+            p_like
+        );
+ 
+    end if;
+END$$
+
+DELIMITER;
+
+

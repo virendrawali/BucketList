@@ -56,6 +56,8 @@
             },
             success: function(response, status) {
                 console.log(response);
+                var filePath = 'static/uploads/' + response.filename;
+				$('#imgUpload').attr('src',filePath);
             },
             error: function(error) {
                 console.log(error);
@@ -115,6 +117,7 @@
                     </span>
                     <div class="pull-right">
                         <img id="imgUpload" style="width: 140px; height: 140px;" class="img-thumbnail">
+                        <input type="hidden" name="filePath" id="filePath"> </input>
                     </div>
                 </div>
 
@@ -123,13 +126,13 @@
             <div class="form-group">
                 <label>Mark this as private and not visible to others.</label>
                 <br/>
-                <input type="checkbox"> Mark as Private <span class="glyphicon glyphicon-lock" aria-hidden="true"></span>
+                <input name = "private" type="checkbox"> Mark as Private <span class="glyphicon glyphicon-lock" aria-hidden="true"></span>
             </div>
 
             <div class="form-group">
                 <label>Have you already accomplished this?</label>
                 <br/>
-                <input type="checkbox"> Mark as Done <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+                <input name = "done" type="checkbox"> Mark as Done <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
             </div>
 
 

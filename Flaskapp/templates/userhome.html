@@ -19,7 +19,35 @@
 
     <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.2.1/js/bootstrap.min.js"></script>
 
+    <script src="../static/js/jquery.ui.widget.js"></script>
+
+    <script type="text/javascript" src="../static/js/jquery.fileupload.js"></script>
+
+    <script type="text/javascript" src="../static/js/jquery.fileupload-process.js"></script>
+
+    <script type="text/javascript" src="../static/js/jquery.fileupload-ui.js"></script>
+
     <script>
+
+    $(function() {
+    $('#fileupload').fileupload({
+        url: 'upload',
+        dataType: 'json',
+        add: function(e, data) {
+            data.submit();
+        },
+        success: function(response, status) {
+
+            var filePath = 'static/uploads/' + response.filename;
+            $('#imgUpload').attr('src', filePath);
+            $('#filePath').val(filePath);
+
+        },
+        error: function(error) {
+            console.log(error);
+        }
+    });
+})
 
     function Edit(elm){
 		localStorage.setItem('editId',$(elm).attr('data-id'));
@@ -31,7 +59,43 @@
 				var data = JSON.parse(res);
 				$('#editTitle').val(data[0]['Title']);
 				$('#editDescription').val(data[0]['Description']);
+				$('#imgUpload').attr('src', data[0]['FilePath']);
+
+                if (data[0]['Private'] == "1") {
+                    $('#chkPrivate').attr('checked', 'checked');
+                }
+
+                if (data[0]['Done'] == "1") {
+                    $('#chkDone').attr('checked', 'checked');
+                }
+
 				$('#editModal').modal();
+			},
+			error: function(error){
+				console.log(error);
+			}
+		});
+	}
+
+    function ConfirmDelete(elem){
+		localStorage.setItem('deleteId',$(elem).attr('data-id'));
+		$('#deleteModal').modal();
+	}
+	function Delete(){
+		$.ajax({
+			url : '/deletewish',
+			data : {id:localStorage.getItem('deleteId')},
+			type : 'POST',
+			success: function(res){
+			    console.log(res)
+				var result = JSON.parse(res);
+				if(result.status == 'OK'){
+					$('#deleteModal').modal('hide');
+					GetWishes();
+				}
+				else{
+					alert(result.status);
+				}
 			},
 			error: function(error){
 				console.log(error);
@@ -45,7 +109,7 @@
 		$('#btnUpdate').click(function(){
 			$.ajax({
 			url : '/updateWish',
-			data : {title:$('#editTitle').val(),description:$('#editDescription').val(),id:localStorage.getItem('editId')},
+			data : {title:$('#editTitle').val(),description:$('#editDescription').val(),id:localStorage.getItem('editId'),filePath:$('#imgUpload').attr('src'),isPrivate:$('#chkPrivate').is(':checked')?1:0,isDone:$('#chkDone').is(':checked')?1:0},
 			type : 'POST',
 			success: function(res){
 
@@ -245,6 +309,34 @@
                         <label for="message-text" class="control-label">Description:</label>
                         <textarea class="form-control" id="editDescription"></textarea>
                       </div>
+                        <div class="form-group">
+                            <label for="txtPost">Photos</label>
+
+                            <div class="input-group">
+                                <span class="input-group-btn">
+                                            <span class="btn btn-primary btn-file">
+                                                Browse&hellip; <input type="file" id="fileupload" name="file" multiple>
+                                            </span>
+                                </span>
+                                <div class="pull-right">
+                                    <img id="imgUpload" style="width: 140px; height: 140px;" class="img-thumbnail">
+                                    <input type="hidden" name="filePath" id="filePath"></input>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="form-group">
+                            <label>Mark this as private and not visible to others.</label>
+                            <br/>
+                            <input id="chkPrivate" name="private" type="checkbox"> Mark as Private <span class="glyphicon glyphicon-lock" aria-hidden="true"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Have you already accomplished this?</label>
+                            <br/>
+                            <input id="chkDone" name="done" type="checkbox"> Mark as Done <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+                        </div>
                     </form>
                   </div>
                   <div class="modal-footer">

@@ -68,7 +68,7 @@ def validateLogin():
         if len(data) > 0:
             if str(data[0][3]) ==  _password:
                 session['user'] = data[0][0]
-                return redirect('/userhome')
+                return redirect('/showDashBoard')
             else:
                 return render_template('error.html', error='Wrong Email address or Password.')
         else:
@@ -101,13 +101,34 @@ def showAddWish():
 def addWish():
     try:
         if session.get('user'):
+            _filepath = ''
+            _private = 0
             _title =request.form['inputTitle']
             _description = request.form['inputDescription']
             _user = session.get('user')
 
+            if request.form.get('filepath') is None:
+                filepath = ''
+            else:
+                filepath = request.form.get('filepath')
+
+            if request.form.get('private') is None:
+                _private = 0
+            else:
+                _private = 1
+
+            _done = 0
+
+            if request.form.get('done') is None:
+                _done = 0
+            else:
+                _done = 1
+
+
+
             conn = mysql.connect()
             cursor = conn.cursor()
-            cursor.callproc('sp_wishadd',(_title,_description,_user))
+            cursor.callproc('sp_wishadd',(_title,_description,_user, filepath, _private, _done))
             data =cursor.fetchall()
 
             if len(data) is 0:
@@ -179,7 +200,7 @@ def getWishById():
             result = cursor.fetchall()
 
             wish = []
-            wish.append({'Id': result[0][0], 'Title': result[0][1], 'Description': result[0][2]})
+            wish.append({'Id': result[0][0], 'Title': result[0][1], 'Description': result[0][2], 'FilePath': result[0][3],'Private': result[0][4], 'Done': result[0][5]})
 
             return json.dumps(wish)
         else:
@@ -196,10 +217,13 @@ def updateWish():
             _title = request.form['title']
             _description = request.form['description']
             _wish_id = request.form['id']
+            _filePath = request.form['filePath']
+            _isPrivate = request.form['isPrivate']
+            _isDone = request.form['isDone']
 
             conn = mysql.connect()
             cursor = conn.cursor()
-            cursor.callproc('sp_updateWish', (_title, _description, _wish_id, _user))
+            cursor.callproc('sp_updateWish', (_title, _description, _wish_id, _user, _filePath, _isPrivate, _isDone))
             data = cursor.fetchall()
 
             if len(data) is 0:
@@ -248,6 +272,64 @@ def upload():
         app.config['UPLOAD_FOLDER'] = 'static/Uploads'
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], f_name))
         return json.dumps({'filename': f_name})
+
+
+@app.route('/showDashBoard')
+def showDashBoard():
+    return render_template('dashboard.html')
+
+@app.route('/getAllWish')
+def getAllWish():
+    try:
+        if session.get('user'):
+            conn = mysql.connect()
+            cursor = conn.cursor()
+            cursor.callproc('sp_GetAllWish')
+            result = cursor.fetchall()
+
+            wishes_dict = []
+            for wish in result:
+                wish_dict = {
+                            'Id': wish[0],
+                            'Title': wish[1],
+                            'Description': wish[2],
+                            'FilePath': wish[3]}
+                wishes_dict.append(wish_dict)
+            return json.dumps(wishes_dict)
+        else:
+            return render_template('error.html', error='Unauthorized Access')
+    except Exception as e:
+        return render_template('error.html', error=str(e))
+
+
+@app.route('/addUpdateLike', methods=['POST'])
+def addUpdateLike():
+    try:
+        if session.get('user'):
+            _wishId = request.form['wish']
+            _like = request.form['like']
+            _user = session.get('user')
+
+            conn = mysql.connect()
+            cursor = conn.cursor()
+            cursor.callproc('sp_AddUpdateLikes', (_wishId,_user,_like))
+            result = cursor.fetchall()
+
+            if len(result) is 0:
+                conn.commit()
+                return json.dumps({'status': 'OK'})
+            else:
+                return render_template('error.html', error='An error occurred!')
+
+        else:
+            return render_template('error.html', error='Unauthorized Access')
+    except Exception as e:
+        return render_template('error.html', error=str(e))
+    finally:
+        cursor.close()
+        conn.close()
+
+
 
 
 if __name__ == "__main__":
